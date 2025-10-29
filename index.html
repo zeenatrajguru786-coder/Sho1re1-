@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🔥 Fire's Reminder App</title>
+
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#ff4d4d" />
+
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      background: #fffaf5;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #333;
+    }
+    h1 {
+      color: #ff4d4d;
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+    .card {
+      width: 100%;
+      max-width: 400px;
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+    input, textarea, button {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      font-size: 16px;
+    }
+    button {
+      background: #ff4d4d;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #ff1f1f;
+    }
+    .reminder {
+      background: #ffe6e6;
+      border: 1px solid #ffb3b3;
+      border-radius: 10px;
+      padding: 10px;
+      margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔥 Fire's Reminder App</h1>
+
+  <div class="card">
+    <input id="title" placeholder="Reminder Title" />
+    <textarea id="body" placeholder="Reminder Details"></textarea>
+    <input type="datetime-local" id="time" />
+    <button id="addReminder">Add Reminder</button>
+  </div>
+
+  <div id="reminderList"></div>
+
+  <script>
+    // === OneSignal Setup ===
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({
+        appId: "e41326c5-12aa-4276-a5de-6379166a68de",
+        safari_web_id: "os_v2_app_4qjsnrisvjbhnjo6mn4rm2ti3y5y57cztgluk34dr7tx5hytpbr6g5gizeqdzpbk3i7o7gx7oewuwwv57svllezmzes7ld7jg6n7ntq",
+        serviceWorkerPath: "OneSignalSDKWorker.js",
+        allowLocalhostAsSecureOrigin: true
+      });
+
+      const permission = await OneSignal.Notifications.permission;
+      if (permission !== "granted") {
+        await OneSignal.Notifications.requestPermission();
+      }
+
+      console.log("✅ OneSignal initialized");
+    });
+
+    // === Local Reminder Logic ===
+    const reminderList = document.getElementById("reminderList");
+    const addBtn = document.getElementById("addReminder");
+    let reminders = JSON.parse(localStorage.getItem("reminders")) || [];
+
+    function displayReminders() {
+      reminderList.innerHTML = "";
+      reminders.forEach((r) => {
+        const div = document.createElement("div");
+        div.className = "reminder";
+        div.innerHTML = `
+          <strong>${r.title}</strong><br>
+          ${r.body}<br>
+          <small>⏰ ${new Date(r.time).toLocaleString()}</small>
+        `;
+        reminderList.appendChild(div);
+      });
+    }
+
+    displayReminders();
+
+    addBtn.onclick = async () => {
+      const title = document.getElementById("title").value.trim();
+      const body = document.getElementById("body").value.trim();
+      const time = document.getElementById("time").value;
+
+      if (!title || !body || !time) return alert("⚠️ Fill all fields!");
+
+      const reminder = { title, body, time };
+      reminders.push(reminder);
+      localStorage.setItem("reminders", JSON.stringify(reminders));
+      displayReminders();
+
+      const sendTime = new Date(time).toISOString();
+
+      // === Send Push Notification via OneSignal REST API ===
+      await fetch("https://onesignal.com/api/v1/notifications", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Basic MzA2N2I0NjMtYTA4ZC00YWM0LThkNGItMmJmY2Y1Mjg4ODgx"
+        },
+        body: JSON.stringify({
+          app_id: "e41326c5-12aa-4276-a5de-6379166a68de",
+          included_segments: ["Subscribed Users"],
+          headings: { en: title },
+          contents: { en: body },
+          send_after: sendTime
+        })
+      });
+
+      alert("✅ Reminder scheduled successfully!");
+    };
+
+    // === Register PWA Service Worker ===
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js");
+    }
+  </script>
+</body>
+</html>

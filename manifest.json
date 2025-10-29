@@ -1,0 +1,16 @@
+{
+  "name": "Fire's Reminder App",
+  "short_name": "Remind🔥",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ff4d4d",
+  "theme_color": "#ff4d4d",
+  "description": "A simple reminder app that notifies you even when closed.",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1827/1827379.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
